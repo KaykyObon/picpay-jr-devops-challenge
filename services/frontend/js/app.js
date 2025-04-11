@@ -23,7 +23,10 @@ const reader = () => {
     const child = container.appendChild(document.createElement('p'))
     readData(child)
     container.classList.add("mx-auto","align-middle","container")
-
+    
+    refresh = setInterval(() => {
+        readData(child);
+    }, 5000);
     return container;
 };
 
@@ -108,6 +111,7 @@ async function writeData(e) {
             'Access-Control-Allow-Origin': '*'
         },
     }).then( response => {
+        
 
     }).catch( error => {
         console.log(error)
