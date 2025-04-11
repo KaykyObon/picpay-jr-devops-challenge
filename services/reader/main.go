@@ -8,13 +8,18 @@ import (
     "net/http"
 )
 
+func init() {
+    fmt.Println("Service is initializing...")
+}
 
 func main() {
+    fmt.Println("Service started.")
+
     redis_host := "redis"
     redis_port := "6379"
     mux := http.NewServeMux()
 
-    mux.HandleFunc("/health", func(writer http.ResponseWriter, request *http.Request){
+    mux.HandleFunc("/health", func(writer http.ResponseWriter, request *http.Request) {
         if request.Method == "OPTIONS" {
             writer.WriteHeader(http.StatusOK)
             return
@@ -23,8 +28,8 @@ func main() {
     })
 
     mux.HandleFunc("/data", func(writer http.ResponseWriter, request *http.Request) {
-        client := redis.NewClient(&redis.Options{Addr: redis_host+":"+redis_port})
-        key := client.Get(client.Context(),"SHAREDKEY")
+        client := redis.NewClient(&redis.Options{Addr: redis_host + ":" + redis_port})
+        key := client.Get("SHAREDKEY")
         fmt.Fprintf(writer, key.Val())
     })
 
@@ -34,5 +39,4 @@ func main() {
     }).Handler(mux)
 
     log.Fatal(http.ListenAndServe(":8080", handler))
-
 }

@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   web:
     build: services/frontend
@@ -10,17 +9,26 @@ services:
   reader:
     build: services/reader
     ports:
-      - "8081:8081"
-    networks:
-      - frontend
-  writer:
-    build: services/writer
-    ports:
       - "8080:8080"
     networks:
+      - frontend
       - backend
-  reids:
+  writer:
+    build: 
+      context: ./services/writer
+    container_name: writer
+    ports:
+      - "8081:8081"
+    networks:
+      - backend
+  redis:
     image: "redis:alpine"
+    networks:
+      - backend
 
 networks:
+  frontend:
+    driver: bridge
   backend:
+    driver: bridge
+
