@@ -182,7 +182,85 @@ So, I guess it's all done.
  Apparently everything responses well from both endpoints, and also data is consistent.
  Tip: Always restart container with docker compose down and docker compose up --build when changing network configs.
 
+ redishost is now localhost:6379
 
+Action from writer is working, but it is not working frontend. You need to refresh the page multiple times at writer and reader.
+Send button is sneaky, because it is not working.
+Frontend, according to Vitor, is broken.
+So, the problem is that the frontend is not having contact with backend and send button is not refreshing.
+The problem is related to app.js, in how the frontend is making requests to the backend services (/write and /data).
+First issue in app.js was in reader() Function: Typo in Child. It was incomplete, so I completed it with:
+setInterval(() => {
+    readData(child)
+}, 2000)
+
+Second issue in app.js is that writer POST doesn't send data as JSON or form.
+"body: e.target.elements.post.value," is raw, and because readers are not properly set, they don't handle raw text well. Also, I did not set "Content-Type".
+So, to fix body, I need to implement from this
+
+body: e.target.elements.post.value,
+
+to this:
+
+body: JSON.stringify({ value: e.target.elements.post.value }),
+headers: {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'
+
+GPT said I should also put, inside do_POST method, this code:
+
+post_data = self.rfile.read(content_length)
+decoded = json.loads(post_data.decode('utf-8'))
+redisclient.set("SHAREDKEY", decoded["value"])
+
+Another problem is that reader is expecting redis key, but it might not exist yet, so I must ensure the reader is accessing the same redis key "SHAREDKEY" and reading it correctly.
+
+I can reclare a refresh code inside app.js to use it later, according to GPT.
+
+To confirm requests are arriving, I added print() statements in python (writer) and fmt.PrintIn() in Go(Reader). 
+
+Now, for the main problems inside app.js, which I used GPT help to correct them.
+
+**1st:** Return was out of place in the reader() function, so I moved "return container to the right place. It was breaking the code and preventing the function from returning the DOM element.
+**2nd:** Child was being used in a global scope, so I removed the global "let refresh" and placed "setInterval" inside the reader() function. It prevents variable scope issues and avoids multiple setInterval calls stacking.
+**3rd:** Duplicated headers and badly formatted mode in the writeData fetch. I reorganized headers properly. If not, the code would break due to syntax error.
+**4th:** I used simple string format to match the backend. The backend expects a plain string payload, not a JSON object with a "value" key.
+**5th:** Routes[page] were being called directly, so I changed to routes[page](), because without the (), it returns "undefined", causing a runtime error when appendChild is called.
+**6th:** And the last problem was "assembleStatus()" logic was messy, so I cleaned up the way the service status is rendered. It improved clarity and makes future maintenance easier.
+
+Now, I'll docker compose down and docker compose up --build -d to test localhost 5000 and see if frontend is working.
+
+Ok, for now I need to set Redis verbose inside docker-compose. I setted a new code to redis inside docker-compose.yaml. It is like this now:
+
+redis:
+    image: "redis:alpine"
+    container_name: redis
+    ports:
+    - "6379:6379"
+    command: ["redis-server", "--loglevel", "verbose"]
+    networks:
+    - backend
+
+Now, I docker compose down and docker compose up --build -d. 
+To see if logs are working, I type "docker logs -f redis".
+
+
+
+
+
+KEA é o conteúdo da flag
+--notify-keyspace-events é a flag
+Para que o espaço " " seja considerado, temos de colocar o espaço no fim após a flaG e seu conteúdo
+**"--notify-keyspace-events KEA", ]**
+
+X = Variável
+"X" = String
+" 'X' " = Vai mandar uma string
+
+My backend is a Go that reads things in Redis. How to flux one a one of this. Do I need to refresh it? Explain step by step of the recquisition of front to backend
+
+
+DevOps: Container e troubleshooting
 
 1st: Others
 2nd: Group
@@ -207,4 +285,28 @@ O bash é um comando com começo, meio e fim. Já o container não tem fim, pois
 
 As portas do localhost existem do 1 até 9999, mas existem convenções, que geralmente usam portas localhost 8080 e 8081.
 
-Git add cria um pacote
+Git add . cria um pacote para commit.
+Staged = Pacote acoplado para ser commitado.
+Com o git você pode usar branchs (versões de código).
+
+git add .
+git commit -m "PicPay Commit: First"
+Git é CLI
+
+git clone
+git clone --help
+curl --help | grep X
+Grep = Filtragem
+
+entender de log, docker, container
+entender e raciocinar as coisas
+Fazer desafios de lógica
+O que é um redis?
+É um sistema de gerenciamento de memória temporária
+Container é algo que executa e não guarda. Ele é só executor.
+Regra 1 de container: Ele pode morrer em qualquer momento, mas isso não atrapalha o fluxo de negócio.
+Por conta disso ele pode virar um monolito.
+
+Comandos básicos de troubleshooting de DevOps
+
+Terraform é um cara de código para subir códigos na nuvem
